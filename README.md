@@ -1,0 +1,2 @@
+Credits for trifbank:
+Kamil Wojcicki (2022). Triangular Filterbank (https://www.mathworks.com/matlabcentral/fileexchange/31755-triangular-filterbank), MATLAB Central File Exchange. Retrieved January 3, 2022. 
