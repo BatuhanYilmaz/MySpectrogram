@@ -1,4 +1,4 @@
-function spect_matrix = custom_spectrogram(x, len_window, num_overlap, num_fft, f_s, mode)
+function spect_matrix = custom_spectrogram(x, len_window, num_overlap, num_fft, fs, mode)
 
  % Make the audio signal mono, unless it's mono
  x = x(:,1);
@@ -12,36 +12,34 @@ function spect_matrix = custom_spectrogram(x, len_window, num_overlap, num_fft, 
  x_padded = cat(1, x, my_pad);
 
  % Calculate the number of iterations
- num_iter = floor((len_signal-len_window)/len_hop)+1;
+ num_iter = floor((len_signal-len_window)/len_hop);
  
  % Create a zero matrix for the spectrogram image
- spect_matrix = zeros(num_fft/2, num_iter);
- 
+ spect_matrix = zeros(num_fft/2+1, num_iter);
+
+  % FOR THE FIRST TIME: applying Short-time Fourier Transform (STFT) of the given window
+  x_padded_window = x_padded(1:len_window, 1);
+  x_padded_window_hamm = x_padded_window.*hamming(length(x_padded_window));
+  out = stft(x_padded_window_hamm, fs, 'FFTLength', num_fft, "FrequencyRange", "onesided");
+  
+  out_abs = abs(out(:,1));
+    
 for idx = 1:num_iter
     
-    % applying Short-time Fourier Transform (STFT) of the given window
-    out = stft(x_padded(idx*len_hop:idx*len_hop+len_window, 1), f_s, 'FFTLength', num_fft);
+    % Apply Short-time Fourier Transform (STFT) of the given window
+    x_padded_window = x_padded(idx*len_hop:idx*len_hop+len_window, 1);
+    x_padded_window_hamm = x_padded_window.*hamming(length(x_padded_window));
     
-    % Only taking the positive frequencies for the image
-    out = abs(out(1:num_fft/2,1));
-    
-    % Choose mode for which type of spectrogram will be calculated (linear by default)
-    
+    % Take only the positive frequencies for the image (onesided)
+    out = stft(x_padded_window_hamm, fs, 'FFTLength', num_fft, "FrequencyRange", "onesided");
+    out_abs = abs(out(:,1));
+  
     % Power spectrogram
     if strcmp(mode, 'power')
-        %out = out.^2;
-
-        out = (log(out) - log(min(out))) ./ (log(max(out)) - log(min(out)));
-    
-    % Mel-spectrogram
-    elseif strcmp(mode, 'mel')
-        %out = hz2mel(out);
+        out_abs = out_abs.^2;
     end
-    %out = 2595 .* log10(out/700 + 1);
-    size(out);
+    spect_matrix(:,idx) = out_abs;
     
-    spect_matrix(:,idx) = out;
-    
-end
+end     
 
 end
